@@ -4,7 +4,7 @@
 
     <groupId>org.parttio</groupId>
     <artifactId>dev-tunnel</artifactId>
-    <version>0.9.0</version>
+    <version>1.0.0-SNAPSHOT</version>
     <name>Dev Tunnel for Vaadin</name>
     <description>Make a Vaadin app in dev mode public on demand: a Cloudflare quick tunnel opened from a pill in the page, with a QR code to open the app on a phone.</description>
     <url>https://github.com/parttio/dev-tunnel</url>
@@ -32,7 +32,7 @@
         <url>https://github.com/parttio/dev-tunnel</url>
         <connection>scm:git:git://github.com/parttio/dev-tunnel.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/parttio/dev-tunnel.git</developerConnection>
-        <tag>v0.9.0</tag>
+        <tag>HEAD</tag>
     </scm>
     <issueManagement>
         <system>GitHub</system>
