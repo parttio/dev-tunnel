@@ -1,6 +1,8 @@
 package org.vaadin.addons.devtunnel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,12 +38,22 @@ class RemoteTunnelTest {
             }
             return new PublicUrl("https://a-b.trycloudflare.com", closed::incrementAndGet);
         }
+
+        @Override
+        public void awaitDns(String url) {
+        }
     }, pendingConnections::add);
 
     private final List<RemoteTunnel.Status> seen = new ArrayList<>();
+    private final List<RemoteTunnel.State> states = new ArrayList<>();
 
     {
-        tunnel.addListener(state -> seen.add(state.status()));
+        tunnel.addListener(state -> {
+            if (seen.isEmpty() || seen.getLast() != state.status()) {
+                seen.add(state.status());
+            }
+            states.add(state);
+        });
     }
 
     @Test
@@ -61,6 +73,17 @@ class RemoteTunnelTest {
 
         assertEquals(List.of(RemoteTunnel.Status.STARTING, RemoteTunnel.Status.ON), seen);
         assertEquals(0, downloads.get());
+    }
+
+    @Test
+    void showsTheUrlAtOnceAndSaysWhenItWorksEverywhere() {
+        connect();
+
+        RemoteTunnel.State on = states.stream().filter(state -> state.status() == RemoteTunnel.Status.ON)
+                .findFirst().orElseThrow();
+        assertEquals("https://a-b.trycloudflare.com", on.url());
+        assertFalse(on.dnsReady());
+        assertTrue(tunnel.state().dnsReady());
     }
 
     @Test
@@ -96,7 +119,7 @@ class RemoteTunnelTest {
     void aFailureSaysWhyAndCanBeRetried() {
         failure = new IOException("no network");
         connect();
-        assertEquals(new RemoteTunnel.State(RemoteTunnel.Status.FAILED, null, "no network", 0), tunnel.state());
+        assertEquals(new RemoteTunnel.State(RemoteTunnel.Status.FAILED, null, false, "no network", 0), tunnel.state());
 
         failure = null;
         connect();

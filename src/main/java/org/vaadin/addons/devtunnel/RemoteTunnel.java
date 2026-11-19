@@ -17,8 +17,11 @@ public final class RemoteTunnel {
         OFF, DOWNLOADING, STARTING, ON, FAILED
     }
 
-    /** The status, the URL when {@code ON}, the reason when {@code FAILED}, and the open remote tabs. */
-    public record State(Status status, String url, String error, int remoteTabs) {
+    /**
+     * The status, the URL when {@code ON}, whether the URL's host can be found on the internet yet, the reason when
+     * {@code FAILED}, and the open remote tabs.
+     */
+    public record State(Status status, String url, boolean dnsReady, String error, int remoteTabs) {
     }
 
     /** The steps of connecting; cloudflared's, or stubs in tests. */
@@ -28,6 +31,9 @@ public final class RemoteTunnel {
         void download() throws IOException;
 
         PublicUrl open(int port) throws IOException;
+
+        /** Waits until the URL's host can be looked up on the internet, or until it gives up. */
+        void awaitDns(String url) throws InterruptedException;
     }
 
     private static final RemoteTunnel INSTANCE = new RemoteTunnel(new Connector() {
@@ -45,6 +51,11 @@ public final class RemoteTunnel {
         public PublicUrl open(int port) throws IOException {
             return PublicUrl.open(port);
         }
+
+        @Override
+        public void awaitDns(String url) throws InterruptedException {
+            PublicDns.await(url);
+        }
     }, task -> Thread.ofPlatform().daemon().name("dev-tunnel-connect").start(task));
 
     private volatile Connector connector;
@@ -54,6 +65,7 @@ public final class RemoteTunnel {
     private String error;
     private int remoteTabs;
     private PublicUrl tunnel;
+    private boolean dnsReady;
     private int generation; // which enable() a finished step belongs to; disable() makes it stale
 
     RemoteTunnel(Connector connector, Executor executor) {
@@ -71,7 +83,7 @@ public final class RemoteTunnel {
     }
 
     public synchronized State state() {
-        return new State(status, tunnel != null ? tunnel.url() : null, error, remoteTabs);
+        return new State(status, tunnel != null ? tunnel.url() : null, dnsReady, error, remoteTabs);
     }
 
     /** Makes the given local port public, unless the tunnel is already on or on its way. */
@@ -83,6 +95,7 @@ public final class RemoteTunnel {
             }
             current = ++generation;
             error = null;
+            dnsReady = false;
             changeStatus(Status.STARTING);
         }
         executor.execute(() -> connect(port, current));
@@ -95,6 +108,7 @@ public final class RemoteTunnel {
             generation++;
             closing = tunnel;
             tunnel = null;
+            dnsReady = false;
             error = null;
             changeStatus(Status.OFF);
         }
@@ -142,13 +156,25 @@ public final class RemoteTunnel {
             return;
         }
         synchronized (this) {
-            if (connection == generation) {
-                tunnel = opened;
-                changeStatus(Status.ON);
+            if (connection != generation) {
+                opened.close(); // turned off while connecting
                 return;
             }
+            tunnel = opened;
+            changeStatus(Status.ON);
         }
-        opened.close(); // turned off while connecting
+        // Shown at once, with a warning until the URL works everywhere
+        try {
+            connector.awaitDns(opened.url());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        synchronized (this) {
+            if (connection == generation) {
+                dnsReady = true;
+                notifyListeners();
+            }
+        }
     }
 
     /** Moves to the status, unless the connection was abandoned meanwhile. */

@@ -59,6 +59,7 @@ public class DevTunnelHandler implements DevToolsMessageHandler {
         message.put("status", state.status().name());
         message.put("url", state.url());
         message.put("qrCode", state.url() != null ? QrCode.svgDataUrl(state.url()) : null);
+        message.put("dnsReady", state.dnsReady());
         message.put("error", state.error());
         message.put("remoteTabs", state.remoteTabs());
         return message;

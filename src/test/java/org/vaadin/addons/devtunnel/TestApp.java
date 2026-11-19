@@ -43,6 +43,10 @@ public class TestApp implements AppShellConfigurator {
                 return new PublicUrl(FAKE_URL, () -> {
                 });
             }
+
+            @Override
+            public void awaitDns(String url) {
+            }
         });
     }
 

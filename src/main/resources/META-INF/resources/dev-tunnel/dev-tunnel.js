@@ -42,7 +42,11 @@
       display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.5rem 0 1rem;
       font-size: var(--copilot-font-size-xs); font-weight: var(--copilot-font-weight-bold); text-transform: uppercase;
     }
-    #dev-tunnel .dt-header .dt-title { flex: 1; }`;
+    #dev-tunnel .dt-header .dt-title { flex: 1; }
+    #dev-tunnel .dt-warning {
+      padding: 0.375rem 0.625rem; border-radius: var(--vaadin-radius-m);
+      background: var(--amber-3, #fff7c2); color: var(--amber-11, #ab6400);
+    }`;
 
   let state = { status: 'OFF', remoteTabs: 0 };
   let open = false;
@@ -108,7 +112,7 @@
   }
 
   function popover() {
-    const { status, url, qrCode, error, remoteTabs } = state;
+    const { status, url, qrCode, dnsReady, error, remoteTabs } = state;
     const on = status !== 'OFF' && status !== 'FAILED';
     const progress = {
       DOWNLOADING: 'Downloading cloudflared (about 40 MB). This happens only the first time…',
@@ -124,7 +128,7 @@
         </div>
         <div class="flex flex-col px-4 py-0.5">
           <div class="flex flex-col divide-y">
-            ${status === 'ON' ? connected(url, qrCode, remoteTabs) : activation()}
+            ${status === 'ON' ? connected(url, qrCode, dnsReady, remoteTabs) : activation()}
             <div class="flex gap-2 justify-between py-3.5">
               <label id="dev-tunnel-enable-label">Enable remote</label>
               ${toggle('dev-tunnel-enable', 'dev-tunnel-enable-label', on)}
@@ -175,15 +179,24 @@
       </div>`;
   }
 
-  function connected(url, qrCode, remoteTabs) {
+  function connected(url, qrCode, dnsReady, remoteTabs) {
     return `
       <div class="flex flex-col gap-2 py-3.5" style="align-items: center; text-align: center">
         <span class="text-xs text-secondary">Scan to open on your phone, or share the link:</span>
         <img src="${qrCode}" alt="QR code for ${escape(url)}" width="168" height="168"
           style="border-radius: var(--vaadin-radius-m); image-rendering: pixelated">
         <a href="${escape(url)}" target="_blank" rel="noopener noreferrer" style="overflow-wrap: anywhere">${escape(url)}</a>
+        ${dnsReady ? '' : dnsWarning()}
         <span class="text-xs text-secondary">${tabs(remoteTabs)} open. Anyone with the link can use the app.</span>
       </div>`;
+  }
+
+  // A phone that looks the name up too early is told it does not exist, and keeps that answer for minutes
+  function dnsWarning() {
+    return `
+      <span class="dt-warning text-xs" role="status">
+        Waiting for DNS. The link may not open on other devices yet; wait for this to go away before scanning.
+      </span>`;
   }
 
   function confirmation(remoteTabs) {

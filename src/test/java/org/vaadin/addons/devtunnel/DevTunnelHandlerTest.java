@@ -35,6 +35,10 @@ class DevTunnelHandlerTest {
             openedPorts.add(port);
             return new PublicUrl("https://quiet-river-sample.trycloudflare.com", () -> tunnelClosed = true);
         }
+
+        @Override
+        public void awaitDns(String url) {
+        }
     }, Runnable::run);
 
     private final Panel panel = new Panel();
