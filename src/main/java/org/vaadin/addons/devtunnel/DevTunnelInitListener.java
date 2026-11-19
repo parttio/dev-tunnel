@@ -3,6 +3,7 @@ package org.vaadin.addons.devtunnel;
 import com.vaadin.flow.server.ServiceInitEvent;
 import com.vaadin.flow.server.VaadinRequest;
 import com.vaadin.flow.server.VaadinServiceInitListener;
+import com.vaadin.flow.server.VaadinServletRequest;
 
 /**
  * In dev mode, adds the Dev Tunnel pill to pages opened from this machine, counts the browser tabs opened through
@@ -24,8 +25,10 @@ public class DevTunnelInitListener implements VaadinServiceInitListener {
             VaadinRequest request = response.getVaadinRequest();
             if (isLocal(request.getRemoteAddr(), request.getHeader("Cf-Connecting-Ip"),
                     request.getHeader("X-Forwarded-For"), request.getHeader("Forwarded"))) {
+                // The port the server listens on, which the browser's differs from behind port mapping (containers)
                 response.getDocument().body().appendElement("script").attr("type", "module")
-                        .attr("src", "dev-tunnel/dev-tunnel.js");
+                        .attr("src", "dev-tunnel/dev-tunnel.js")
+                        .attr("data-port", String.valueOf(localPort(request)));
             }
         });
         event.getSource().addUIInitListener(uiInit -> {
@@ -35,6 +38,10 @@ public class DevTunnelInitListener implements VaadinServiceInitListener {
                 uiInit.getUI().addDetachListener(detach -> RemoteTunnel.get().remoteTabClosed());
             }
         });
+    }
+
+    private static int localPort(VaadinRequest request) {
+        return request instanceof VaadinServletRequest servletRequest ? servletRequest.getLocalPort() : 0;
     }
 
     /**

@@ -80,6 +80,11 @@
             <artifactId>vaadin-dev-server</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- The QR code -->
         <dependency>
             <groupId>com.google.zxing</groupId>

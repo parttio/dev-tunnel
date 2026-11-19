@@ -62,7 +62,9 @@
   const send = (command, data = {}) => bus().send(command, data);
   const escape = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   const tabs = (n) => `${n} remote tab${n === 1 ? '' : 's'}`;
-  const port = () => Number(location.port) || (location.protocol === 'https:' ? 443 : 80);
+  // The server's own port, set by DevTunnelInitListener; the browser's differs behind port mapping (containers)
+  const serverPort = () => Number(document.querySelector('script[src$="dev-tunnel/dev-tunnel.js"]')?.dataset.port);
+  const port = () => serverPort() || Number(location.port) || (location.protocol === 'https:' ? 443 : 80);
 
   function update(next) {
     state = next;
