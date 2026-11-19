@@ -16,7 +16,7 @@ Dev Tunnel is a community add-on by [Team Parttio](https://github.com/parttio). 
 <dependency>
     <groupId>org.parttio</groupId>
     <artifactId>dev-tunnel</artifactId>
-    <version>0.9.0</version>
+    <version>0.9.1</version>
     <optional>true</optional>
 </dependency>
 ```
